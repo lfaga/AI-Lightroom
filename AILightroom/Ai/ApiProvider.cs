@@ -10,6 +10,8 @@ namespace AILightroom.Ai
 
     public string ApiKey { get; set; }
 
+    public RequestType RequestType { get; set; }
+
     public List<SchemaElement> InputSchema { get; set; }
 
     public FileEncodingMethod OutputType { get; set; }

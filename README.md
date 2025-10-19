@@ -12,6 +12,8 @@ Working with multiple AI image generation APIs is a chaotic process. Each has di
 
 This application provides a unified interface to manage this entire workflow. It uses a provider-based model where each API service can be defined in a simple XML file. The application then dynamically builds the UI for that service, allowing the user to generate, save, and organize images from multiple sources in one place.
 
+![Application Screenshot](https://github.com/lfaga/AI-Lightroom/blob/main/.github/screencap.png)
+
 ### Key Architectural Features:
 
 *   **Schema-Driven UI:** The user interface for each API is generated dynamically at runtime based on an XML schema that defines the required parameters, types (string, choice, slider), and default values.
@@ -20,10 +22,10 @@ This application provides a unified interface to manage this entire workflow. It
 *   **Workflow Tools:** The library allows users to tag, filter, and sort images, as well as generate new variations by easily reusing and modifying the parameters from previous creations.
 *   **Technology Stack:** C# with Windows Presentation Foundation (WPF) for the UI, demonstrating a robust desktop application architecture.
 
-![Application Screenshot](https://github.com/lfaga/AI-Lightroom/blob/main/.github/screencap.png)
-
 ### Current Status
 
 This is a functional but incomplete personal project. The core systems (provider model, dynamic UI, library management) are in place.
+
+The project comes with a sample provider xml for pollinations.ai but you can configure any web API provider, remote or local.
 
 ---

@@ -67,22 +67,51 @@ namespace AILightroom.Ai
 
     public static BinaryFilesArray CallImageApi(ApiProvider provider, Dictionary<string, object> parameters)
     {
-      var request = (HttpWebRequest) WebRequest.Create(provider.Endpoint);
-      request.Method = "POST";
-      request.ContentType = "application/json";
-      request.Headers["Authorization"] = "Bearer " + provider.ApiKey;
+      HttpWebRequest request;
+
+      if (provider.RequestType == RequestType.Get)
+      {
+        var qsbuild = new StringBuilder();
+
+        string prompt = "";
+
+        foreach (var parameter in parameters)
+        {
+          if (parameter.Key == "prompt")
+          {
+            prompt = parameter.Value.ToString();
+          }
+          else
+          {
+            qsbuild.AppendFormat("{0}={1}&", parameter.Key, Uri.EscapeDataString(parameter.Value.ToString()));
+          }
+        }
+
+        var url = string.Format("{0}{1}?{2}", provider.Endpoint, prompt, qsbuild.ToString(0, qsbuild.Length - 1));
+
+        request = (HttpWebRequest) WebRequest.Create(url);
+        request.Method = "Get";
+      }
+      else //if (provider.RequestType == RequestType.Post)
+      {
+        request = (HttpWebRequest) WebRequest.Create(provider.Endpoint);
+
+        request.Method = "Post";
+        request.ContentType = "application/json";
+        request.Headers["Authorization"] = "Bearer " + provider.ApiKey;
+
+        var json = new JavaScriptSerializer().Serialize(parameters);
+        var data = Encoding.UTF8.GetBytes(json);
+        request.ContentLength = data.Length;
+
+        using (var stream = request.GetRequestStream())
+        {
+          stream.Write(data, 0, data.Length);
+        }
+      }
 
       request.Timeout = 300000;
       request.ReadWriteTimeout = 300000;
-
-      var json = new JavaScriptSerializer().Serialize(parameters);
-      var data = Encoding.UTF8.GetBytes(json);
-      request.ContentLength = data.Length;
-
-      using (var stream = request.GetRequestStream())
-      {
-        stream.Write(data, 0, data.Length);
-      }
 
       var ret = new BinaryFilesArray();
 

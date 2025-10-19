@@ -9,6 +9,7 @@
     ImageBinary,
     ImageB64,
     ImageUrl,
-    ChildElements
+    ChildElements,
+    Constant
   }
 }

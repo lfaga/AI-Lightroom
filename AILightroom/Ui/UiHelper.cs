@@ -22,8 +22,11 @@ namespace AILightroom.Ui
 
       foreach (var element in elements)
       {
-        var lbl = new Label {Content = element.Name};
-        panel.Children.Add(lbl);
+        if (element.Type != SchemaElementType.Constant)
+        {
+          var lbl = new Label {Content = element.Name};
+          panel.Children.Add(lbl);
+        }
 
         FrameworkElement ctl = null;
 
@@ -72,6 +75,14 @@ namespace AILightroom.Ui
           case SchemaElementType.ChildElements:
             ctl = CreateForm(window, element.Children);
             ctl.Tag = element.Name;
+            break;
+          case SchemaElementType.Constant:
+            ctl = new TextBox
+            {
+              Text = element.Default, 
+              Tag = element.Name,
+              Visibility = Visibility.Collapsed
+            };
             break;
         }
         if (ctl != null)
