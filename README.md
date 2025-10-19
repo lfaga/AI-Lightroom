@@ -1,4 +1,6 @@
-# AI Image Manager ("AI Lightroom") - A WPF Digital Asset Manager for Generative AI
+# AI Lightroom - A Digital Asset Manager for Generative AI
+
+![Application Icon](https://github.com/lfaga/AI-Lightroom/blob/main/.github/icon.png)
 
 This repository contains the source code for a work-in-progress desktop application designed to streamline the workflow for anyone working with AI image generation services. It acts as both a universal client and a local library/asset manager, similar in concept to Adobe Lightroom.
 
@@ -17,6 +19,8 @@ This application provides a unified interface to manage this entire workflow. It
 *   **Digital Asset Management (DAM):** Every generated image is saved with a corresponding `.json` sidecar file containing all the metadata (prompt, model, seed, etc.) required for **100% reproducibility.**
 *   **Workflow Tools:** The library allows users to tag, filter, and sort images, as well as generate new variations by easily reusing and modifying the parameters from previous creations.
 *   **Technology Stack:** C# with Windows Presentation Foundation (WPF) for the UI, demonstrating a robust desktop application architecture.
+
+![Application Screenshot](https://github.com/lfaga/AI-Lightroom/blob/main/.github/screencap.png)
 
 ### Current Status
 
