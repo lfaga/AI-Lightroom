@@ -1,0 +1,17 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:AILightroom.Properties">
+
+  <BitmapImage x:Key="BmpSave" UriSource="/AILightroom;component/Resources/save.png" />
+  <BitmapImage x:Key="BmpDelete" UriSource="/AILightroom;component/Resources/trash.png" />
+  <BitmapImage x:Key="BmpNew" UriSource="/AILightroom;component/Resources/new.png" />
+  <BitmapImage x:Key="BmpPlaceholder" UriSource="/AILightroom;component/Resources/placeholder.png" />
+  <BitmapImage x:Key="BmpRefresh" UriSource="/AILightroom;component/Resources/refresh.png" />
+  <BitmapImage x:Key="BmpPlay" UriSource="/AILightroom;component/Resources/play.png" />
+  <BitmapImage x:Key="BmpSmallSetup" UriSource="/AILightroom;component/Resources/small_setup.png" />
+  <BitmapImage x:Key="BmpAccept" UriSource="/AILightroom;component/Resources/accept.png" />
+  <BitmapImage x:Key="BmpCancel" UriSource="/AILightroom;component/Resources/cancel.png" />
+  <BitmapImage x:Key="BmpSmallPlus" UriSource="/AILightroom;component/Resources/small_plus.png" />
+  <BitmapImage x:Key="BmpSmallMinus" UriSource="/AILightroom;component/Resources/small_minus.png" />
+  <BitmapImage x:Key="BmpSmallBullet" UriSource="/AILightroom;component/Resources/small_bullet.png" />
+</ResourceDictionary>
