@@ -8,28 +8,39 @@
 	<InputSchema>
 		<SchemaElement>
 			<Name>referrer</Name>
+			<Description>Authorized app Id for remote calls</Description>
 			<Type>Constant</Type>
 			<Default>ai-lightroom.lfaga</Default>
 			<Required>true</Required>
 		</SchemaElement>
 		<SchemaElement>
 			<Name>nologo</Name>
+			<Description>Do not include logo</Description>
 			<Type>Constant</Type>
 			<Default>true</Default>
 			<Required>true</Required>
 		</SchemaElement>
 		<SchemaElement>
 			<Name>private</Name>
+			<Description>Do not include the image in the public feed of the website</Description>
 			<Type>Constant</Type>
 			<Default>true</Default>
 			<Required>true</Required>
 		</SchemaElement>
 		<SchemaElement>
 			<Name>enhance</Name>
+			<Description>Run the image thru an enhancer model after generation</Description>
 			<Type>Constant</Type>
 			<Default>true</Default>
 			<Required>true</Required>
 		</SchemaElement>
+		<SchemaElement>
+			<Name>safe</Name>
+			<Description>Enforce safe content</Description>
+			<Type>Constant</Type>
+			<Default>false</Default>
+			<Required>true</Required>
+		</SchemaElement>		
 		<SchemaElement>
 			<Name>seed</Name>
 			<Description>Fixed number for same RNG seed, 0 for random</Description>

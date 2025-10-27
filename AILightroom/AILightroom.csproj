@@ -63,6 +63,9 @@
     </ApplicationDefinition>
     <Compile Include="Ai\OutputSchema.cs" />
     <Compile Include="Ai\RequestType.cs" />
+    <Compile Include="InputBox.xaml.cs">
+      <DependentUpon>InputBox.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ProvidersWindow.xaml.cs">
       <DependentUpon>ProvidersWindow.xaml</DependentUpon>
     </Compile>
@@ -80,6 +83,10 @@
     <Compile Include="Ui\IntegerValidationRule.cs" />
     <Compile Include="Ui\Controls\IntTextBox.cs" />
     <Compile Include="Ui\UiHelper.cs" />
+    <Page Include="InputBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

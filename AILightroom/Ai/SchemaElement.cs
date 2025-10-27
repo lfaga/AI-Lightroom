@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Xml.Serialization;
 
 namespace AILightroom.Ai
 {
@@ -14,5 +15,8 @@ namespace AILightroom.Ai
     public string Default { get; set; }
     public bool? Required { get; set; }
     public List<SchemaElement> Children { get; set; }
+
+    [XmlIgnore]
+    public SchemaElement Parent { get; set; }
   }
 }

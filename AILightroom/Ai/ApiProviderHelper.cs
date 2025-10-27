@@ -16,6 +16,8 @@ namespace AILightroom.Ai
 {
   public static class ApiProviderHelper
   {
+    private const int ConstTimeout = 300000;
+
     public static List<ApiProvider> ListProviders(string folderPath)
     {
       var ret = new List<ApiProvider>();
@@ -52,7 +54,33 @@ namespace AILightroom.Ai
           provider = (ApiProvider) serializer.Deserialize(xr);
         }
       }
+      return FixReferences(provider);
+    }
+
+    private static ApiProvider FixReferences(ApiProvider provider)
+    {
+      //A generic top level method with room to implement other post-deserialization fixes if neeeded
+
+      provider.InputSchema = FixParentElement(provider.InputSchema, null);
+
       return provider;
+    }
+
+    private static List<SchemaElement> FixParentElement(List<SchemaElement> list, SchemaElement parent)
+    {
+      foreach (var element in list)
+      {
+        element.Parent = parent;
+        //parent could be null if it's the top level list, not a problem, it just resets it to null
+
+        if (element.Type == SchemaElementType.ChildElements
+            && element.Children.Count > 0)
+        {
+          FixParentElement(element.Children, element);
+        }
+      }
+
+      return list;
     }
 
     public static void SaveToFile(ApiProvider provider, string filePath)
@@ -73,7 +101,7 @@ namespace AILightroom.Ai
       {
         var qsbuild = new StringBuilder();
 
-        string prompt = "";
+        var prompt = "";
 
         foreach (var parameter in parameters)
         {
@@ -91,6 +119,8 @@ namespace AILightroom.Ai
 
         request = (HttpWebRequest) WebRequest.Create(url);
         request.Method = "Get";
+        request.Timeout = ConstTimeout;
+        request.ReadWriteTimeout = ConstTimeout;
       }
       else //if (provider.RequestType == RequestType.Post)
       {
@@ -99,6 +129,8 @@ namespace AILightroom.Ai
         request.Method = "Post";
         request.ContentType = "application/json";
         request.Headers["Authorization"] = "Bearer " + provider.ApiKey;
+        request.Timeout = ConstTimeout;
+        request.ReadWriteTimeout = ConstTimeout;
 
         var json = new JavaScriptSerializer().Serialize(parameters);
         var data = Encoding.UTF8.GetBytes(json);
@@ -110,9 +142,6 @@ namespace AILightroom.Ai
         }
       }
 
-      request.Timeout = 300000;
-      request.ReadWriteTimeout = 300000;
-
       var ret = new BinaryFilesArray();
 
       try
@@ -122,7 +151,8 @@ namespace AILightroom.Ai
           // Get the response stream to pass to our parser
           using (var responseStream = response.GetResponseStream())
           {
-            if (provider.OutputType == FileEncodingMethod.Binary)
+            if (responseStream != null &&
+                provider.OutputType == FileEncodingMethod.Binary)
             {
               using (var reader = new MemoryStream())
               {
@@ -156,12 +186,15 @@ namespace AILightroom.Ai
           {
             using (var responseStream = errorResponse.GetResponseStream())
             {
-              using (var reader = new StreamReader(responseStream))
+              if (responseStream != null)
               {
-                var errorText = reader.ReadToEnd();
-                throw new Exception(
-                  string.Format("Server returned error: {0}. Details: {1}",
-                    errorResponse.StatusCode, errorText), ex);
+                using (var reader = new StreamReader(responseStream))
+                {
+                  var errorText = reader.ReadToEnd();
+                  throw new Exception(
+                    string.Format("Server returned error: {0}. Details: {1}",
+                      errorResponse.StatusCode, errorText), ex);
+                }
               }
             }
           }
