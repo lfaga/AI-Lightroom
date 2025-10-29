@@ -79,7 +79,7 @@ namespace AILightroom.Ui
           case SchemaElementType.Constant:
             ctl = new TextBox
             {
-              Text = element.Default, 
+              Text = element.Default,
               Tag = element.Name,
               Visibility = Visibility.Collapsed
             };

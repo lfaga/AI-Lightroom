@@ -14,4 +14,6 @@
   <BitmapImage x:Key="BmpSmallPlus" UriSource="/AILightroom;component/Resources/small_plus.png" />
   <BitmapImage x:Key="BmpSmallMinus" UriSource="/AILightroom;component/Resources/small_minus.png" />
   <BitmapImage x:Key="BmpSmallBullet" UriSource="/AILightroom;component/Resources/small_bullet.png" />
+  <BitmapImage x:Key="BmpSmallAccept" UriSource="/AILightroom;component/Resources/small_accept.png" />
+  <BitmapImage x:Key="BmpSmallCancel" UriSource="/AILightroom;component/Resources/small_cancel.png" />
 </ResourceDictionary>

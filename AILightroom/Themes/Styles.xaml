@@ -9,6 +9,7 @@
   <SolidColorBrush x:Key="DarkBrush" Color="#FF404040" />
   <SolidColorBrush x:Key="MediumBrush" Color="#FF909090" />
   <SolidColorBrush x:Key="LightBrush" Color="#FFD0D0D0" />
+  <SolidColorBrush x:Key="AccentBrush" Color="#FFC0E0F0" />
 
 
   <!-- Background Brushes -->
@@ -20,6 +21,11 @@
   <LinearGradientBrush x:Key="GradientDarkBrush" EndPoint="0.5,1" StartPoint="0.5,0">
     <GradientStop Color="#FF303030" Offset="0" />
     <GradientStop Color="#FF505050" Offset="1" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="GradientAccentBrush" EndPoint="0.5,1" StartPoint="0.5,0">
+    <GradientStop Color="#FF406070" Offset="0" />
+    <GradientStop Color="#FF304050" Offset="1" />
   </LinearGradientBrush>
 
   <LinearGradientBrush x:Key="GradientErrorBrush" EndPoint="0.5,1" StartPoint="0.5,0">
@@ -84,7 +90,7 @@
 
   <!-- Default ComboBox Stlye -->
   <Style TargetType="ComboBox">
-    <Setter Property="Background" Value="{StaticResource GradientDarkestBrush}" />
+    <Setter Property="Background" Value="{StaticResource GradientDarkBrush}" />
     <Setter Property="Foreground" Value="{StaticResource DarkestBrush}" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontFamily" Value="Arial" />
@@ -94,6 +100,15 @@
   <Style TargetType="ComboBoxItem">
     <Setter Property="Background" Value="{StaticResource GradientDarkestBrush}" />
     <Setter Property="Foreground" Value="{StaticResource LightBrush}" />
+    <Style.Triggers>
+      <Trigger Property="IsHighlighted" Value="True">
+        <Setter Property="Background" Value="{StaticResource GradientAccentBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DarkestBrush}" />
+      </Trigger>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Foreground" Value="{StaticResource DarkestBrush}" />
+      </Trigger>
+    </Style.Triggers>
   </Style>
 
   <!-- Default Scrollbars Style -->
@@ -111,9 +126,41 @@
     <Setter Property="BorderBrush" Value="{StaticResource MediumBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="4" />
+    <Setter Property="Margin" Value="1" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource LightBrush}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border Name="buttonBorder"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Resources>
+      <Style TargetType="TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="2,0,0,0" />
+        <Setter Property="Foreground"
+                Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+      </Style>
+    </Style.Resources>
     <Style.Triggers>
       <Trigger Property="IsFocused" Value="True">
-        <Setter Property="BorderBrush" Value="LightSkyBlue" />
+        <Setter Property="BorderBrush" Value="{StaticResource LightBrush}" />
+        <Setter Property="Background" Value="{StaticResource GradientAccentBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+      </Trigger>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="BorderBrush" Value="{StaticResource MediumBrush}" />
+        <Setter Property="Background" Value="{StaticResource GradientAccentBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
       </Trigger>
     </Style.Triggers>
   </Style>
@@ -126,7 +173,6 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{StaticResource LightBrush}" />
   </Style>
-
 
   <!-- ListBox Style -->
   <Style TargetType="ListBox">

@@ -55,7 +55,7 @@
                 Style="{StaticResource IconicButtonStyle}">
           <StackPanel Orientation="Horizontal">
             <Image Source="{StaticResource BmpPlay}" IsHitTestVisible="False" Stretch="None" />
-            <Label>Execute</Label>
+            <TextBlock>Execute</TextBlock>
           </StackPanel>
         </Button>
       </Grid>

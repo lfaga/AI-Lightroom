@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using AILightroom.Ai;
 using AILightroom.Properties;
 
@@ -13,24 +14,17 @@ namespace AILightroom
   /// </summary>
   public partial class ProvidersWindow : Window
   {
+    private bool _elementIsDirty;
+    private ListBoxItem _previousFileListItemSelected;
+    private TreeViewItem _previousSchemaTreeItemSelected;
+    private string _providerFilename;
+    private bool _providerIsDirty;
     private ApiProvider _selectedProvider;
 
     public ProvidersWindow()
     {
       InitializeComponent();
     }
-
-    private void BtnAccpet_OnClick(object sender, RoutedEventArgs e)
-    {
-      DialogResult = true;
-      Close();
-    }
-
-    private void BtnCancel_OnClick(object sender, RoutedEventArgs e)
-    {
-      Close();
-    }
-
 
     protected override void OnInitialized(EventArgs e)
     {
@@ -64,6 +58,32 @@ namespace AILightroom
       {
         ProvidersListColumn.Width = new GridLength(100);
       }
+
+      TxtName.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnProviderDataChanged));
+      TxtEndpoint.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnProviderDataChanged));
+      TxtApiKey.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnProviderDataChanged));
+      ComboRequestType.AddHandler(Selector.SelectionChangedEvent, new RoutedEventHandler(OnProviderDataChanged));
+      ComboOutputType.AddHandler(Selector.SelectionChangedEvent, new RoutedEventHandler(OnProviderDataChanged));
+
+      TxtElementName.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      TxtElementDescription.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      ComboElementType.AddHandler(Selector.SelectionChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      NumberElementMininmum.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      NumberElementMaximum.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      NumberElementStep.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      ListElementChoices.AddHandler(Selector.SelectionChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      TxtElementDefault.AddHandler(TextBoxBase.TextChangedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+      ChkElementRequired.AddHandler(ToggleButton.CheckedEvent, new RoutedEventHandler(OnSchemaElementDataChanged));
+    }
+
+    private void OnProviderDataChanged(object sender, RoutedEventArgs e)
+    {
+      _providerIsDirty = true;
+    }
+
+    private void OnSchemaElementDataChanged(object sender, RoutedEventArgs e)
+    {
+      _elementIsDirty = true;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -83,8 +103,6 @@ namespace AILightroom
 
     private void ProvidersWindow_OnLoaded(object sender, RoutedEventArgs e)
     {
-      ListFiles.Items.Clear();
-
       foreach (var s in Enum.GetNames(typeof (FileEncodingMethod)))
       {
         ComboOutputType.Items.Add(s);
@@ -103,6 +121,8 @@ namespace AILightroom
 
     private void RefreshList()
     {
+      ListFiles.Items.Clear();
+
       var list = ApiProviderHelper.ListProviderFiles(App.GetConfigPath());
       foreach (var fileName in list)
       {
@@ -117,31 +137,52 @@ namespace AILightroom
 
     private void ListFiles_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-      var item = (ListBoxItem) ListFiles.SelectedItem;
-      _selectedProvider = ApiProviderHelper.LoadFromFile(item.Tag.ToString());
+      var item = ListFiles.SelectedItem as ListBoxItem;
+      if (item != null && item.Equals(_previousFileListItemSelected))
+        return;
 
-      TxtName.Text = _selectedProvider.Name;
-      TxtEndpoint.Text = _selectedProvider.Endpoint;
-      TxtApiKey.Text = _selectedProvider.ApiKey;
-      ComboRequestType.SelectedItem = _selectedProvider.RequestType.ToString();
-      ComboOutputType.SelectedItem = _selectedProvider.OutputType.ToString();
-
-      TreeInputSchema.Items.Clear();
-
-      foreach (var element in _selectedProvider.InputSchema)
+      if (_providerIsDirty && MessageBox.Show("Discard provider changes",
+        "Warning: Selecting a different provider will discard currently unsaved changes.\nDo you wish to continue?",
+        MessageBoxButton.YesNo) != MessageBoxResult.Yes)
       {
-        var tvi = new TreeViewItem
-        {
-          Header = element.Name,
-          Tag = element
-        };
+        if (_previousFileListItemSelected != null)
+          _previousFileListItemSelected.IsSelected = true;
+        return;
+      }
 
-        TreeInputSchema.Items.Add(tvi);
+      if (item != null)
+      {
+        ClearProviderControls();
 
-        if (element.Type == SchemaElementType.ChildElements)
+        _providerFilename = item.Tag.ToString();
+        _selectedProvider = ApiProviderHelper.LoadFromFile(_providerFilename);
+
+        TxtName.Text = _selectedProvider.Name;
+        TxtEndpoint.Text = _selectedProvider.Endpoint;
+        TxtApiKey.Text = _selectedProvider.ApiKey;
+        ComboRequestType.SelectedItem = _selectedProvider.RequestType.ToString();
+        ComboOutputType.SelectedItem = _selectedProvider.OutputType.ToString();
+
+        foreach (var element in _selectedProvider.InputSchema)
         {
-          AddTreeViewChildren(element, tvi);
+          var tvi = new TreeViewItem
+          {
+            Header = element.Name,
+            Tag = element
+          };
+
+          TreeInputSchema.Items.Add(tvi);
+
+          if (element.Type == SchemaElementType.ChildElements)
+          {
+            AddTreeViewChildren(element, tvi);
+            tvi.IsExpanded = true;
+          }
         }
+        //If a new provider is loaded, the dirty flags should be false.
+        _providerIsDirty = false;
+        _elementIsDirty = false;
+        _previousFileListItemSelected = item;
       }
     }
 
@@ -161,6 +202,24 @@ namespace AILightroom
     private void TreeInputSchema_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
       var tvi = TreeInputSchema.SelectedItem as TreeViewItem;
+
+      if (tvi != null && tvi.Equals(_previousSchemaTreeItemSelected))
+        return;
+
+      if (_elementIsDirty && MessageBox.Show("Discard changes",
+        "Warning: Changing selected nodes will discard current changes.\nDo you wish to continue?",
+        MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+      {
+        _previousSchemaTreeItemSelected.IsSelected = true;
+        return;
+      }
+
+      MapElementFromTreeNode(_previousSchemaTreeItemSelected);
+      _previousSchemaTreeItemSelected = tvi;
+    }
+
+    private void MapElementFromTreeNode(TreeViewItem tvi)
+    {
       if (tvi != null)
       {
         var se = tvi.Tag as SchemaElement;
@@ -185,12 +244,16 @@ namespace AILightroom
 
           TxtElementDefault.Text = se.Default;
           ChkElementRequired.IsChecked = se.Required;
+
+          _elementIsDirty = false;
         }
       }
     }
 
     private void BtnInpSchAdd_OnClick(object sender, RoutedEventArgs e)
     {
+      ClearElementControls();
+
       var nse = new SchemaElement
       {
         Name = "Unnamed",
@@ -234,6 +297,7 @@ namespace AILightroom
         TreeInputSchema.Items.Add(tvi);
       }
 
+      _providerIsDirty = true;
       //select the new node
       tvi.IsSelected = true;
     }
@@ -259,6 +323,8 @@ namespace AILightroom
             "Element Deletion", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
             return;
 
+          tvselected.IsSelected = false;
+
           if (selElement.Parent != null)
           {
             selElement.Parent.Children.Remove(selElement);
@@ -269,8 +335,6 @@ namespace AILightroom
           }
         }
 
-        TreeInputSchema.SelectedValuePath = string.Empty;
-
         var tvp = tvselected.Parent as TreeViewItem;
 
         if (tvp != null)
@@ -280,6 +344,247 @@ namespace AILightroom
         else
         {
           TreeInputSchema.Items.Remove(tvselected);
+        }
+
+        ClearElementControls();
+
+        _providerIsDirty = true;
+      }
+    }
+
+    private void BtnNewProvider_Click(object sender, RoutedEventArgs e)
+    {
+      using (var ib = new InputBox())
+      {
+        if (ib.Show(this, "New Provider", "New provider filename (no extensions)") == MsgBoxResult.Ok)
+        {
+          var f = ib.Response;
+
+          if (!string.IsNullOrWhiteSpace(f))
+          {
+            ClearProviderControls();
+
+            _selectedProvider = new ApiProvider();
+            _providerFilename = ib.Response + (!f.ToLowerInvariant().EndsWith(".xml") ? ".xml" : string.Empty);
+
+            var n = new ListViewItem
+            {
+              Content = _providerFilename,
+              Tag = Path.Combine(App.GetConfigPath(), _providerFilename)
+            };
+
+            ListFiles.Items.Add(n);
+
+            n.IsSelected = true;
+
+            _selectedProvider.Name = _selectedProvider.Name;
+
+            _providerIsDirty = true;
+          }
+        }
+      }
+    }
+
+    private void BtnDeleteProvider_Click(object sender, RoutedEventArgs e)
+    {
+      var lbi = ListFiles.SelectedItem as ListBoxItem;
+
+      if (lbi != null)
+      {
+        if (MessageBox.Show(string.Format("Confirm removing {0}.\nWarning: It cannot be undone.", lbi.Content),
+          "Provider Deletion", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+          return;
+
+        var fpath = lbi.Tag.ToString();
+        lbi.IsSelected = false;
+        ClearProviderControls();
+
+        ListFiles.Items.Remove(lbi);
+        File.Delete(fpath);
+
+        _providerFilename = string.Empty;
+        _selectedProvider = null;
+        _providerIsDirty = false;
+        _elementIsDirty = false;
+      }
+    }
+
+    private void BtnRefrehProviderList_Click(object sender, RoutedEventArgs e)
+    {
+      if (MessageBox.Show("Warning: Refreshing the providers list will rest any unsaved data.\nDo you want to continue",
+        "Refresh providers", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+        return;
+
+      var lbi = ListFiles.SelectedItem as ListBoxItem;
+      if (lbi != null)
+        lbi.IsSelected = false;
+
+      ClearProviderControls();
+      RefreshList();
+      _providerIsDirty = false;
+      _elementIsDirty = false;
+    }
+
+    private void BtnChoiceAdd_Click(object sender, RoutedEventArgs e)
+    {
+      var tvi = TreeInputSchema.SelectedItem as TreeViewItem;
+
+      if (tvi != null)
+      {
+        var sel = tvi.Tag as SchemaElement;
+
+        if (sel != null && sel.Type == SchemaElementType.Choice)
+        {
+          using (var ib = new InputBox())
+          {
+            if (ib.Show(this, "Add Chocice", "Input a string value") == MsgBoxResult.Ok
+                && !string.IsNullOrWhiteSpace(ib.Response))
+            {
+              if (!sel.Choices.Contains(ib.Response))
+              {
+                sel.Choices.Add(ib.Response);
+                ListElementChoices.Items.Add(ib.Response);
+                _elementIsDirty = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    private void BtnChoiceRemove_Click(object sender, RoutedEventArgs e)
+    {
+      var tvi = TreeInputSchema.SelectedItem as TreeViewItem;
+
+      if (tvi != null)
+      {
+        var sel = tvi.Tag as SchemaElement;
+
+        if (sel != null && sel.Type == SchemaElementType.Choice
+            && ListElementChoices.SelectedIndex >= 0)
+        {
+          var s = ListElementChoices.Items[ListElementChoices.SelectedIndex] as string;
+
+          sel.Choices.Remove(s);
+          ListElementChoices.Items.RemoveAt(ListElementChoices.SelectedIndex);
+          _elementIsDirty = true;
+        }
+      }
+    }
+
+    private void ClearProviderControls()
+    {
+      TxtName.Text = string.Empty;
+      TxtEndpoint.Text = string.Empty;
+      TxtApiKey.Text = string.Empty;
+      ComboRequestType.SelectedIndex = -1;
+      ComboOutputType.SelectedIndex = -1;
+
+      TreeInputSchema.Items.Clear();
+
+      ClearElementControls();
+    }
+
+    private void ClearElementControls()
+    {
+      ListElementChoices.Items.Clear();
+      TxtElementName.Text = string.Empty;
+      TxtElementDescription.Text = string.Empty;
+      ComboElementType.SelectedIndex = -1;
+      NumberElementMininmum.Text = string.Empty;
+      NumberElementMaximum.Text = string.Empty;
+      NumberElementStep.Text = string.Empty;
+    }
+
+    private void BtnClose_Click(object sender, RoutedEventArgs e)
+    {
+      if ((_elementIsDirty || _providerIsDirty)
+          && (MessageBox.Show("Discard changes",
+            "Warning: Closing this window will discard any unsaved changes.\nDo you wish to continue?",
+            MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+      {
+        Close();
+      }
+    }
+
+    private void BtnProviderSave_Click(object sender, RoutedEventArgs e)
+    {
+      if (!string.IsNullOrWhiteSpace(_providerFilename) && _selectedProvider != null)
+      {
+        _selectedProvider.Name = TxtName.Text;
+        _selectedProvider.Endpoint = TxtEndpoint.Text;
+        _selectedProvider.ApiKey = TxtApiKey.Text;
+        _selectedProvider.RequestType = (RequestType) Enum.Parse(typeof (RequestType),
+          ComboRequestType.SelectedValue.ToString());
+        _selectedProvider.OutputType = (FileEncodingMethod) Enum.Parse(typeof (FileEncodingMethod),
+          ComboOutputType.SelectedValue.ToString());
+
+        //_selectedProvider.InputSchema should be already updated by the "schema elements form" and it's save button.
+        //since every TreeViewItem has a tag that point to a SchemaElement in the _selectedProvider, the update
+        //should have been automatic and transparent. BUT CHECK IF ITS WORKING PROPERLY!
+
+        //_selectedProvider.OutputSchema
+        //oh crap, i forgot i need to create some kind of editor to define the output schema when OutputType is
+        //JsonSingleB64Image, JsonMultiB64Image or JsonUrls to know where to get the image from, like:
+        //<OutputSchema><UrlExtractionPath>//data/item/url</UrlExtractionPath></OutputSchema>
+        //maybe for now add just a textbox to input a XPath query... too bad if you are not a programmer... ha ha
+        //Also remember that only Binary and JsonUrls is implemented in ApiProviderHelper.
+        //for now:
+        _selectedProvider.OutputSchema = new OutputSchema {UrlExtractionPath = "//data/item/url"};
+
+        try
+        {
+          ApiProviderHelper.SaveToFile(_selectedProvider, _providerFilename);
+          _providerIsDirty = false;
+          _elementIsDirty = false;
+          MessageBox.Show("Save provider", string.Format("Provider file saved at:\n{0}", _providerFilename),
+            MessageBoxButton.OK);
+        }
+        catch (Exception ex)
+        {
+          MessageBox.Show("Error saving", ex.Message, MessageBoxButton.OK);
+        }
+      }
+    }
+
+    private void BtnElementCancel_OnClick(object sender, RoutedEventArgs e)
+    {
+      if (MessageBox.Show("Discard changes", "Do you want to discard current schema element changes?",
+        MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+      {
+        ClearElementControls();
+        _elementIsDirty = false;
+      }
+    }
+
+    private void BtnElementOk_OnClick(object sender, RoutedEventArgs e)
+    {
+      var tvi = TreeInputSchema.SelectedItem as TreeViewItem;
+      if (tvi != null)
+      {
+        var sel = tvi.Tag as SchemaElement;
+        if (sel != null)
+        {
+          sel.Name = TxtElementName.Text;
+          sel.Description = TxtElementDescription.Text;
+          sel.Type = (SchemaElementType) Enum.Parse(typeof (SchemaElementType),
+            ComboElementType.SelectedValue.ToString());
+
+          sel.Minimum = NumberElementMininmum.GetValue();
+          sel.Maximum = NumberElementMaximum.GetValue();
+          sel.Step = NumberElementStep.GetValue();
+
+          sel.Choices.Clear();
+          foreach (string item in ListElementChoices.Items)
+          {
+            sel.Choices.Add(item);
+          }
+
+          sel.Default = TxtElementDefault.Text;
+          sel.Required = ChkElementRequired.IsChecked;
+
+          _providerIsDirty = true;
+          _elementIsDirty = false;
         }
       }
     }

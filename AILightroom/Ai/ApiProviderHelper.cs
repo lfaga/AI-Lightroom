@@ -87,7 +87,7 @@ namespace AILightroom.Ai
     {
       var serializer = new XmlSerializer(typeof (ApiProvider));
 
-      using (var fs = new FileStream(filePath, FileMode.Create))
+      using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
       {
         serializer.Serialize(fs, provider);
       }

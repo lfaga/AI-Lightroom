@@ -20,14 +20,14 @@
       <Button x:Name="BtnOk" Width="100" Height="32">
         <StackPanel Orientation="Horizontal">
           <Image Source="{StaticResource BmpAccept}" IsHitTestVisible="False" Stretch="None" />
-          <Label>Accept</Label>
+          <TextBlock>Accept</TextBlock>
         </StackPanel>
       </Button>
       <Separator Width="2" />
       <Button x:Name="BtnCancel" Width="100" Height="32">
         <StackPanel Orientation="Horizontal">
           <Image Source="{StaticResource BmpCancel}" IsHitTestVisible="False" Stretch="None" />
-          <Label>Cancel</Label>
+          <TextBlock>Cancel</TextBlock>
         </StackPanel>
       </Button>
     </StackPanel>
