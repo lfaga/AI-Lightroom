@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
@@ -155,6 +156,7 @@ namespace AILightroom
         ClearProviderControls();
 
         _providerFilename = item.Tag.ToString();
+
         _selectedProvider = ApiProviderHelper.LoadFromFile(_providerFilename);
 
         TxtName.Text = _selectedProvider.Name;
@@ -214,7 +216,7 @@ namespace AILightroom
         return;
       }
 
-      MapElementFromTreeNode(_previousSchemaTreeItemSelected);
+      MapElementFromTreeNode(tvi);
       _previousSchemaTreeItemSelected = tvi;
     }
 
@@ -252,6 +254,9 @@ namespace AILightroom
 
     private void BtnInpSchAdd_OnClick(object sender, RoutedEventArgs e)
     {
+      if (_selectedProvider == null)
+        return;
+
       ClearElementControls();
 
       var nse = new SchemaElement
@@ -260,27 +265,8 @@ namespace AILightroom
         Type = SchemaElementType.String
       };
 
-      SchemaElement selElement = null;
-
       var tvParent = TreeInputSchema.SelectedItem as TreeViewItem;
-
-      if (tvParent != null)
-      {
-        selElement = tvParent.Tag as SchemaElement;
-      }
-
-      var selCanHoldChildren = selElement != null && selElement.Type == SchemaElementType.ChildElements;
-
-      if (selCanHoldChildren)
-      {
-        //add element as a child of the selected node if the node is of ChildElements type
-        selElement.Children.Add(nse);
-      }
-      else
-      {
-        //add element to the root of the InputSchema
-        _selectedProvider.InputSchema.Add(nse);
-      }
+      var seParent = tvParent == null ? null : tvParent.Tag as SchemaElement;
 
       var tvi = new TreeViewItem
       {
@@ -288,7 +274,7 @@ namespace AILightroom
         Tag = nse
       };
 
-      if (selCanHoldChildren)
+      if (seParent != null && seParent.Type == SchemaElementType.ChildElements)
       {
         tvParent.Items.Add(tvi);
       }
@@ -299,6 +285,7 @@ namespace AILightroom
 
       _providerIsDirty = true;
       //select the new node
+      _previousSchemaTreeItemSelected = tvi;
       tvi.IsSelected = true;
     }
 
@@ -364,7 +351,7 @@ namespace AILightroom
           {
             ClearProviderControls();
 
-            _selectedProvider = new ApiProvider();
+            _selectedProvider = new ApiProvider {Name = ib.Response};
             _providerFilename = ib.Response + (!f.ToLowerInvariant().EndsWith(".xml") ? ".xml" : string.Empty);
 
             var n = new ListViewItem
@@ -374,11 +361,11 @@ namespace AILightroom
             };
 
             ListFiles.Items.Add(n);
+            _previousFileListItemSelected = n;
 
             n.IsSelected = true;
 
-            _selectedProvider.Name = _selectedProvider.Name;
-
+            TxtName.Text = _selectedProvider.Name;
             _providerIsDirty = true;
           }
         }
@@ -431,18 +418,16 @@ namespace AILightroom
 
       if (tvi != null)
       {
-        var sel = tvi.Tag as SchemaElement;
-
-        if (sel != null && sel.Type == SchemaElementType.Choice)
+        var t = (SchemaElementType) Enum.Parse(typeof (SchemaElementType), ComboElementType.Text);
+        if (t == SchemaElementType.Choice)
         {
           using (var ib = new InputBox())
           {
-            if (ib.Show(this, "Add Chocice", "Input a string value") == MsgBoxResult.Ok
+            if (ib.Show(this, "Add Choice", "Input a string value") == MsgBoxResult.Ok
                 && !string.IsNullOrWhiteSpace(ib.Response))
             {
-              if (!sel.Choices.Contains(ib.Response))
+              if (!ListElementChoices.Items.Contains(ib.Response))
               {
-                sel.Choices.Add(ib.Response);
                 ListElementChoices.Items.Add(ib.Response);
                 _elementIsDirty = true;
               }
@@ -501,10 +486,11 @@ namespace AILightroom
       if ((_elementIsDirty || _providerIsDirty)
           && (MessageBox.Show("Discard changes",
             "Warning: Closing this window will discard any unsaved changes.\nDo you wish to continue?",
-            MessageBoxButton.YesNo) == MessageBoxResult.Yes))
+            MessageBoxButton.YesNo) != MessageBoxResult.Yes))
       {
-        Close();
+        return;
       }
+      Close();
     }
 
     private void BtnProviderSave_Click(object sender, RoutedEventArgs e)
@@ -534,11 +520,11 @@ namespace AILightroom
 
         try
         {
-          ApiProviderHelper.SaveToFile(_selectedProvider, _providerFilename);
+          ApiProviderHelper.SaveToFile(_selectedProvider, Path.Combine(App.GetConfigPath(), _providerFilename));
           _providerIsDirty = false;
           _elementIsDirty = false;
-          MessageBox.Show("Save provider", string.Format("Provider file saved at:\n{0}", _providerFilename),
-            MessageBoxButton.OK);
+          MessageBox.Show(string.Format("Provider file saved at:\n{0}", _providerFilename),
+            "Save provider", MessageBoxButton.OK);
         }
         catch (Exception ex)
         {
@@ -565,6 +551,7 @@ namespace AILightroom
         var sel = tvi.Tag as SchemaElement;
         if (sel != null)
         {
+          tvi.Header = TxtElementName.Text;
           sel.Name = TxtElementName.Text;
           sel.Description = TxtElementDescription.Text;
           sel.Type = (SchemaElementType) Enum.Parse(typeof (SchemaElementType),
@@ -574,14 +561,38 @@ namespace AILightroom
           sel.Maximum = NumberElementMaximum.GetValue();
           sel.Step = NumberElementStep.GetValue();
 
-          sel.Choices.Clear();
-          foreach (string item in ListElementChoices.Items)
+          if (sel.Type == SchemaElementType.Choice)
           {
-            sel.Choices.Add(item);
+            sel.Choices = new List<string>();
+
+            foreach (string item in ListElementChoices.Items)
+            {
+              sel.Choices.Add(item);
+            }
           }
 
           sel.Default = TxtElementDefault.Text;
           sel.Required = ChkElementRequired.IsChecked;
+
+          var tvp = tvi.Parent as TreeViewItem;
+          if (tvp != null)
+          {
+            var sep = tvp.Tag as SchemaElement;
+            if (sep != null && sep.Type == SchemaElementType.ChildElements
+                && !sep.Children.Contains(sel))
+            {
+              sep.Children.Add(sel);
+              sel.Parent = sep;
+            }
+          }
+          else
+          {
+            if (_selectedProvider.InputSchema == null)
+              _selectedProvider.InputSchema = new List<SchemaElement>();
+
+            if (!_selectedProvider.InputSchema.Contains(sel))
+              _selectedProvider.InputSchema.Add(sel);
+          }
 
           _providerIsDirty = true;
           _elementIsDirty = false;
